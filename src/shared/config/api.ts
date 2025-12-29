@@ -1,13 +1,30 @@
 // API Configuration
 // Works both in local and production (Railway)
 
+// Normalizar URL para asegurar que tenga protocolo
+const normalizeUrl = (url: string): string => {
+  if (!url) return url;
+  
+  // Remover espacios
+  url = url.trim();
+  
+  // Si ya tiene protocolo, retornar tal cual
+  if (url.startsWith('http://') || url.startsWith('https://')) {
+    return url.replace(/\/$/, ''); // Remover trailing slash
+  }
+  
+  // Si no tiene protocolo, agregar https://
+  return `https://${url}`.replace(/\/$/, ''); // Remover trailing slash
+};
+
 // Obtener la URL del API desde variables de entorno
 const getApiBaseUrl = (): string => {
   const envUrl = import.meta.env.VITE_API_URL;
   
   // En desarrollo, usar localhost por defecto
   if (import.meta.env.DEV) {
-    return envUrl || 'http://localhost:3000';
+    const devUrl = envUrl || 'http://localhost:3000';
+    return normalizeUrl(devUrl);
   }
   
   // En producción, la variable DEBE estar configurada
@@ -19,7 +36,7 @@ const getApiBaseUrl = (): string => {
     throw new Error('VITE_API_URL no está configurada. Configúrala en Netlify → Site settings → Environment variables');
   }
   
-  return envUrl;
+  return normalizeUrl(envUrl);
 };
 
 export const API_CONFIG = {
