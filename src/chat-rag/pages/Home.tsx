@@ -200,23 +200,55 @@ const ChatWindow: React.FC<{
   }, [messages]);
 
   return (
-    <div className="flex-1 min-h-0 overflow-y-auto p-6 space-y-4">
+    <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden p-2 sm:p-4 md:p-6 space-y-4">
       {messages.map((m) => {
         const fromUser = m.role === "user";
         return (
           <div
             key={m.id}
-            className={`flex ${fromUser ? "justify-end" : "justify-start"}`}
+            className={`flex ${fromUser ? "justify-end" : "justify-start"} w-full`}
           >
             <div
-              className={`max-w-3xl p-4 rounded-2xl shadow-lg ${
+              className={`w-full max-w-[85%] sm:max-w-2xl md:max-w-3xl p-3 sm:p-4 rounded-2xl shadow-lg ${
                 fromUser
                   ? "bg-blue-600 text-white"
                   : "bg-slate-800/80 border border-slate-700 text-slate-200"
               }`}
             >
-              <div className="whitespace-pre-wrap">
-                <ReactMarkdown>{m.content}</ReactMarkdown>
+              <div className="whitespace-pre-wrap break-words overflow-wrap-anywhere">
+                <ReactMarkdown
+                  className="prose prose-invert prose-sm max-w-none
+                    prose-headings:text-slate-100
+                    prose-p:text-slate-200 prose-p:break-words
+                    prose-strong:text-white
+                    prose-code:text-slate-100 prose-code:bg-slate-900/50 prose-code:px-1 prose-code:py-0.5 prose-code:rounded
+                    prose-pre:bg-slate-900 prose-pre:text-slate-200 prose-pre:overflow-x-auto
+                    prose-ul:text-slate-200 prose-ol:text-slate-200
+                    prose-li:text-slate-200
+                    prose-a:text-blue-400 prose-a:break-all
+                    prose-table:w-full prose-table:overflow-x-auto
+                    prose-blockquote:text-slate-300"
+                  components={{
+                    // Asegurar que tablas y código no causen overflow
+                    table: ({ node, ...props }) => (
+                      <div className="overflow-x-auto -mx-2 sm:mx-0">
+                        <table className="min-w-full" {...props} />
+                      </div>
+                    ),
+                    code: ({ node, inline, ...props }: any) => {
+                      if (inline) {
+                        return <code className="break-all" {...props} />;
+                      }
+                      return (
+                        <pre className="overflow-x-auto">
+                          <code {...props} />
+                        </pre>
+                      );
+                    },
+                  }}
+                >
+                  {m.content}
+                </ReactMarkdown>
               </div>
               <div
                 className={`text-xs mt-2 ${
