@@ -11,7 +11,6 @@ export const OAuthSuccessPage = () => {
   useEffect(() => {
     // ✅ Prevenir múltiples ejecuciones
     if (hasProcessed.current) {
-      console.log('⚠️ OAuth callback ya procesado, ignorando duplicado');
       return;
     }
 
@@ -29,8 +28,6 @@ export const OAuthSuccessPage = () => {
         const rootFolderId = searchParams.get('rootFolderId');
         const sourceId = searchParams.get('sourceId');
 
-        console.log('🔐 Guardando tokens OAuth...', { provider, sourceName, sourceId });
-
         if (!provider || !accessToken) {
           throw new Error('Faltan parámetros de OAuth');
         }
@@ -39,7 +36,6 @@ export const OAuthSuccessPage = () => {
 
         if (sourceId) {
           // Actualizar fuente existente
-          console.log('📝 Actualizando fuente existente:', sourceId);
           const response = await fetch(`${API_BASE_URL}/api/document-sources/${sourceId}`, {
             method: 'PUT',
             headers: {
@@ -57,10 +53,8 @@ export const OAuthSuccessPage = () => {
           if (!response.ok) {
             throw new Error('Error al actualizar la fuente');
           }
-          console.log('✅ Fuente actualizada exitosamente');
         } else {
           // Crear nueva fuente
-          console.log('➕ Creando nueva fuente:', sourceName);
           const response = await fetch(`${API_BASE_URL}/api/document-sources`, {
             method: 'POST',
             headers: {
@@ -82,12 +76,8 @@ export const OAuthSuccessPage = () => {
 
           if (!response.ok) {
             const errorData = await response.json();
-            console.error('❌ Error creando fuente:', errorData);
             throw new Error(errorData.message || 'Error al crear la fuente');
           }
-          
-          const result = await response.json();
-          console.log('✅ Fuente creada exitosamente:', result);
         }
 
         setStatus('success');

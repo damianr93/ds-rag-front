@@ -268,13 +268,11 @@ export const ChatRagPage: React.FC = () => {
     
     // ✅ Verificación TRIPLE: ref local + ref activo + lock global
     if (hasProcessedFile.current || isProcessing.current || globalFileProcessingLock) {
-      console.log('⚠️ Archivo ya procesado, en proceso, o lock global activo - IGNORANDO');
       return;
     }
     
     // ✅ Si hay fileInfo, activar TODOS los locks INMEDIATAMENTE
     if (fileInfo) {
-      console.log('🔒 Activando todos los locks para:', fileInfo.fileName);
       isProcessing.current = true;
       hasProcessedFile.current = true;
       globalFileProcessingLock = true;
@@ -285,21 +283,18 @@ export const ChatRagPage: React.FC = () => {
         // Si viene desde el explorador, crear nueva conversación con el nombre del archivo
         if (fileInfo) {
           try {
-            console.log('📄 Creando conversación para archivo:', fileInfo.fileName);
             const conv: any = await (dispatch as any)(createConversation(fileInfo.fileName));
-            console.log('✅ Conversación creada:', conv);
             
             if (conv?.id) {
               // Seleccionar la conversación creada
               dispatch(selectConversation(conv.id));
               dispatch(resetMessagesFor(conv.id));
               
-              console.log('❓ Haciendo pregunta sobre el archivo (sin procesarlo nuevamente)...');
               // Solo preguntar, NO procesar
               await askAboutFile(fileInfo, conv.id);
             }
           } catch (e: any) {
-            console.error('❌ Error creando conversación:', e);
+            console.error('Error creando conversación:', e);
             toast.error("No se pudo crear la conversación para el archivo");
           }
           // Limpiar el state para evitar reprocesar
@@ -319,7 +314,6 @@ export const ChatRagPage: React.FC = () => {
     return () => {
       if (fileInfo) {
         setTimeout(() => {
-          console.log('🔓 Liberando lock global (cleanup)');
           globalFileProcessingLock = false;
         }, 5000);
       }
@@ -330,30 +324,25 @@ export const ChatRagPage: React.FC = () => {
     fileInfo: { sourceId: number; fileId: string; fileName: string },
     conversationId: number
   ) => {
-    console.log('💬 Preguntando sobre archivo:', fileInfo.fileName);
     setProcessingFile(true);
     
     try {
       // Solo hacer la pregunta, sin procesar el archivo
       const question = `¿De qué trata el documento "${fileInfo.fileName}"? Dame un resumen detallado de su contenido y después pregúntame qué información específica necesito.`;
       
-      console.log('❓ Enviando pregunta a conversación', conversationId);
-      
       // Enviar el mensaje automáticamente
       setTimeout(async () => {
         try {
-          console.log('🚀 Disparando sendMessage...');
           await dispatch(sendMessage(conversationId, question) as any);
-          console.log('✅ Mensaje enviado correctamente');
         } catch (e: any) {
-          console.error('❌ Error al enviar mensaje:', e);
+          console.error('Error al enviar mensaje:', e);
           toast.error("Error al enviar la pregunta: " + e.message);
         } finally {
           setProcessingFile(false);
         }
       }, 800);
     } catch (error: any) {
-      console.error('❌ Error asking about file:', error);
+      console.error('Error asking about file:', error);
       toast.error(error.message || "Error al consultar sobre el archivo");
       setProcessingFile(false);
     }

@@ -44,18 +44,6 @@ export const API_CONFIG = {
   timeout: 30000,
 };
 
-// Log para debug (solo en desarrollo)
-if (import.meta.env.DEV) {
-  console.log('🔧 API Config:', {
-    baseURL: API_CONFIG.baseURL,
-    envVar: import.meta.env.VITE_API_URL,
-    mode: import.meta.env.MODE,
-  });
-} else {
-  // En producción, log mínimo
-  console.log('🌐 API Base URL:', API_CONFIG.baseURL);
-}
-
 export const getApiUrl = (endpoint: string): string => {
   const baseURL = API_CONFIG.baseURL.replace(/\/$/, ''); // Remove trailing slash
   const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;

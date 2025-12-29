@@ -26,11 +26,6 @@ export async function apiFetch<T = any>(
   // Asegurar que el path empiece con /
   const cleanPath = path.startsWith('/') ? path : `/${path}`;
   const fullUrl = `${API_BASE_URL}${cleanPath}`;
-  
-  // Log para debug en desarrollo
-  if (import.meta.env.DEV) {
-    console.log('🌐 API Request:', { method: options.method || 'GET', url: fullUrl });
-  }
 
   let body: string | undefined;
   if (options.body) {

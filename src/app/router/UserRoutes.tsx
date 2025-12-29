@@ -134,9 +134,6 @@ const Sidebar: React.FC<SidebarProps> = ({
 }) => {
   // ✅ SEGURO: Decodificamos el JWT para obtener el rol real
   const isAdmin = isUserAdmin();
-  
-  console.log("🔍 Debug Sidebar:");
-  console.log("isAdmin (desde JWT):", isAdmin);
 
   const menuItems = [
     {
@@ -212,12 +209,7 @@ const Sidebar: React.FC<SidebarProps> = ({
 
       {/* Navigation */}
       <div className={`space-y-2 flex-1 overflow-y-auto ${collapsed ? "p-2" : "p-3"}`}>
-        {(() => {
-          const filteredItems = menuItems.filter(item => item.enabled);
-          console.log("📋 All menuItems:", menuItems);
-          console.log("✅ Filtered items (enabled):", filteredItems);
-          return filteredItems;
-        })().map((item) => {
+        {menuItems.filter(item => item.enabled).map((item) => {
           const Icon = item.icon;
           const isActive = currentPath === item.path;
 

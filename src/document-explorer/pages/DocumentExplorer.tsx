@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Folder, File, RefreshCw, Settings, X, Edit, ChevronRight, Home, ArrowLeft, CheckSquare, Square } from 'lucide-react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Folder, File, RefreshCw, Settings, X, Edit, ChevronRight, Home, ArrowLeft, CheckSquare, Square, Search, ArrowUpDown } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { API_BASE_URL } from '../../shared/constants';
@@ -54,6 +54,55 @@ export const DocumentExplorerPage: React.FC = () => {
     folderId: '',
   });
   const [trackedFilesMap, setTrackedFilesMap] = useState<Record<string, TrackedFile>>({});
+  const [searchQuery, setSearchQuery] = useState('');
+  const [sortBy, setSortBy] = useState<'type' | 'name' | 'date'>('type');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+
+  // Filtrar y ordenar archivos - siempre se ejecuta (no condicional)
+  const filteredAndSortedFiles = useMemo(() => {
+    // Filtrar archivos por búsqueda
+    let filteredFiles = files.filter(file =>
+      file.name.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+
+    // Ordenar archivos
+    filteredFiles.sort((a, b) => {
+      // Ordenar por tipo: carpetas primero
+      if (sortBy === 'type') {
+        if (a.isFolder !== b.isFolder) {
+          return sortOrder === 'asc' 
+            ? (a.isFolder ? -1 : 1) 
+            : (a.isFolder ? 1 : -1);
+        }
+      }
+
+      // Ordenar por nombre
+      if (sortBy === 'name') {
+        const nameA = a.name.toLowerCase();
+        const nameB = b.name.toLowerCase();
+        if (nameA < nameB) return sortOrder === 'asc' ? -1 : 1;
+        if (nameA > nameB) return sortOrder === 'asc' ? 1 : -1;
+        return 0;
+      }
+
+      // Ordenar por fecha
+      if (sortBy === 'date') {
+        const dateA = a.modifiedTime ? new Date(a.modifiedTime).getTime() : 0;
+        const dateB = b.modifiedTime ? new Date(b.modifiedTime).getTime() : 0;
+        if (dateA < dateB) return sortOrder === 'asc' ? -1 : 1;
+        if (dateA > dateB) return sortOrder === 'asc' ? 1 : -1;
+        return 0;
+      }
+
+      // Por defecto, mantener orden original pero carpetas primero
+      if (a.isFolder !== b.isFolder) {
+        return a.isFolder ? -1 : 1;
+      }
+      return 0;
+    });
+
+    return filteredFiles;
+  }, [files, searchQuery, sortBy, sortOrder]);
 
   useEffect(() => {
     loadSources();
@@ -424,6 +473,52 @@ export const DocumentExplorerPage: React.FC = () => {
         )}
       </div>
 
+      {/* Buscador y Ordenamiento */}
+      {files.length > 0 && (
+        <div className="bg-slate-800 border-b border-slate-700 p-2 sm:p-4">
+          <div className="flex flex-col sm:flex-row gap-2 sm:gap-4">
+            {/* Buscador */}
+            <div className="flex-1 relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+              <input
+                type="text"
+                placeholder="Buscar archivos..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 bg-slate-700 border border-slate-600 rounded-lg focus:outline-none focus:border-blue-500 text-white placeholder-slate-400 text-sm sm:text-base"
+              />
+            </div>
+
+            {/* Selector de Ordenamiento */}
+            <div className="flex gap-2">
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value as 'type' | 'name' | 'date')}
+                className="px-2 sm:px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg focus:outline-none focus:border-blue-500 text-white text-xs sm:text-sm"
+              >
+                <option value="type">Tipo</option>
+                <option value="name">Nombre</option>
+                <option value="date">Fecha</option>
+              </select>
+              <button
+                onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
+                className="px-2 sm:px-3 py-2 bg-slate-700 hover:bg-slate-600 border border-slate-600 rounded-lg transition-colors flex items-center gap-1 sm:gap-2 text-white text-xs sm:text-sm"
+                title={sortOrder === 'asc' ? 'Ascendente' : 'Descendente'}
+              >
+                <ArrowUpDown className="w-4 h-4" />
+                <span className="hidden sm:inline">{sortOrder === 'asc' ? '↑' : '↓'}</span>
+              </button>
+            </div>
+          </div>
+          {/* Contador de resultados */}
+          {searchQuery && (
+            <div className="mt-2 text-xs text-slate-400">
+              {filteredAndSortedFiles.length} de {files.length} archivos
+            </div>
+          )}
+        </div>
+      )}
+
       {/* File List */}
       <div className="flex-1 overflow-auto p-2 sm:p-4">
         {loading ? (
@@ -435,9 +530,14 @@ export const DocumentExplorerPage: React.FC = () => {
             <Folder className="w-16 h-16 mb-4 opacity-50" />
             <p>No hay archivos en esta carpeta</p>
           </div>
+        ) : filteredAndSortedFiles.length === 0 && searchQuery ? (
+          <div className="flex flex-col items-center justify-center h-full text-slate-400">
+            <Search className="w-16 h-16 mb-4 opacity-50" />
+            <p>No se encontraron archivos con "{searchQuery}"</p>
+          </div>
         ) : (
           <div className="space-y-1">
-            {files.map(file => {
+            {filteredAndSortedFiles.map(file => {
               const isTracked = !!trackedFilesMap[file.id];
               return (
                 <div
