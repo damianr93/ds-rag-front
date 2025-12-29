@@ -332,10 +332,10 @@ export const AdminPanelPage: React.FC = () => {
   return (
     <div className="h-full flex flex-col bg-slate-900 text-white">
       {/* Header */}
-      <div className="bg-slate-800 border-b border-slate-700 p-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold flex items-center gap-2">
+      <div className="bg-slate-800 border-b border-slate-700 p-3 sm:p-6">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
+          <div className="min-w-0 flex-1">
+            <h1 className="text-lg sm:text-2xl font-bold flex items-center gap-2">
               <Settings className="w-6 h-6" />
               Panel de Administración
             </h1>
@@ -343,7 +343,7 @@ export const AdminPanelPage: React.FC = () => {
               Gestión de fuentes de documentos del sistema
             </p>
           </div>
-          <div className="flex gap-3">
+          <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full sm:w-auto">
             <button
               onClick={() => setShowNewSourceModal(true)}
               className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 rounded-lg transition-colors"
@@ -362,7 +362,7 @@ export const AdminPanelPage: React.FC = () => {
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-6">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-4 mt-4 sm:mt-6">
           <div className="bg-slate-700/50 rounded-lg p-4">
             <div className="text-sm text-slate-400">Total Fuentes</div>
             <div className="text-2xl font-bold mt-1">{sources.length}</div>
@@ -389,7 +389,7 @@ export const AdminPanelPage: React.FC = () => {
       </div>
 
       {/* Table */}
-      <div className="flex-1 overflow-auto p-6">
+      <div className="flex-1 overflow-auto p-2 sm:p-4 md:p-6">
         {sources.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-slate-400">
             <Settings className="w-16 h-16 mb-4 opacity-50" />

@@ -69,7 +69,10 @@ const ConversationsSidebar: React.FC<{
   return (
     <aside
       className={`bg-slate-800/70 border-r border-slate-700 p-4 flex flex-col transition-all duration-300
-      ${collapsed ? "w-0 overflow-hidden p-0 border-r-0" : "w-80"}`}
+      ${collapsed ? "w-0 overflow-hidden p-0 border-r-0" : "w-full sm:w-80"}
+      fixed lg:static inset-y-0 left-0 z-20 lg:z-auto
+      ${collapsed ? '-translate-x-full lg:translate-x-0' : 'translate-x-0'}
+      lg:translate-x-0`}
       aria-hidden={collapsed}
     >
       {!collapsed && (
@@ -438,25 +441,45 @@ export const ChatRagPage: React.FC = () => {
   // - Cada contenedor flex que tenga hijos con overflow necesita min-h-0.
   // - Así garantizamos que el scroll vive adentro del chat y no estira el layout.
   return (
-    <div className="h-screen min-h-0 flex">
+    <div className="h-screen min-h-0 flex relative">
+      {/* Overlay para móvil cuando sidebar está abierto */}
+      {!sidebarCollapsed && (
+        <div 
+          className="fixed inset-0 bg-black/50 z-10 lg:hidden"
+          onClick={() => setSidebarCollapsed(true)}
+        />
+      )}
+      
       <ConversationsSidebar
         conversations={conversations}
         selectedId={selectedId}
-        onSelect={onSelectConversation}
-        onNew={onNewConversation}
+        onSelect={(id) => {
+          onSelectConversation(id);
+          // Cerrar sidebar en móvil después de seleccionar
+          if (window.innerWidth < 1024) {
+            setSidebarCollapsed(true);
+          }
+        }}
+        onNew={() => {
+          onNewConversation();
+          // Cerrar sidebar en móvil después de crear nueva
+          if (window.innerWidth < 1024) {
+            setSidebarCollapsed(true);
+          }
+        }}
         onUpdateTitle={onUpdateTitle}
         loading={loadingConversations}
         collapsed={sidebarCollapsed}
       />
 
-      <div className="flex-1 min-h-0 flex flex-col bg-gradient-to-br from-slate-900 via-blue-900/10 to-slate-800">
+      <div className="flex-1 min-h-0 flex flex-col bg-gradient-to-br from-slate-900 via-blue-900/10 to-slate-800 w-full lg:w-auto">
         {/* Header Chat */}
-        <div className="flex items-center justify-between p-4 border-b border-slate-700 bg-slate-800/50">
-          <div className="flex items-center gap-2">
+        <div className="flex items-center justify-between p-2 sm:p-4 border-b border-slate-700 bg-slate-800/50 gap-2">
+          <div className="flex items-center gap-1 sm:gap-2 min-w-0 flex-1">
             {/* Toggle sidebar */}
             <button
               onClick={() => setSidebarCollapsed((v) => !v)}
-              className="text-slate-300 hover:text-white px-2 py-1 rounded-lg hover:bg-slate-700 transition-colors"
+              className="text-slate-300 hover:text-white px-2 py-1 rounded-lg hover:bg-slate-700 transition-colors flex-shrink-0"
               title={
                 sidebarCollapsed ? "Mostrar historial" : "Ocultar historial"
               }
@@ -469,17 +492,18 @@ export const ChatRagPage: React.FC = () => {
               )}
             </button>
 
-            <MessageSquarePlus className="w-5 h-5 text-blue-400" />
-            <h1 className="text-white font-semibold">Asistente RAG</h1>
+            <MessageSquarePlus className="w-4 h-4 sm:w-5 sm:h-5 text-blue-400 flex-shrink-0" />
+            <h1 className="text-white font-semibold text-sm sm:text-base truncate">Asistente RAG</h1>
             {loadingHistory && (
-              <span className="ml-2 text-xs text-slate-400 inline-flex items-center gap-1">
-                <Loader2 className="w-3 h-3 animate-spin" /> Cargando
-                historial...
+              <span className="ml-1 sm:ml-2 text-xs text-slate-400 inline-flex items-center gap-1 flex-shrink-0">
+                <Loader2 className="w-3 h-3 animate-spin" /> 
+                <span className="hidden sm:inline">Cargando historial...</span>
               </span>
             )}
             {processingFile && (
-              <span className="ml-2 text-xs text-blue-400 inline-flex items-center gap-1">
-                <Loader2 className="w-3 h-3 animate-spin" /> Consultando documento...
+              <span className="ml-1 sm:ml-2 text-xs text-blue-400 inline-flex items-center gap-1 flex-shrink-0">
+                <Loader2 className="w-3 h-3 animate-spin" /> 
+                <span className="hidden sm:inline">Consultando documento...</span>
               </span>
             )}
           </div>
@@ -499,37 +523,37 @@ export const ChatRagPage: React.FC = () => {
         <ChatWindow messages={messages} onCopy={onCopy} />
 
         {/* Input */}
-        <div className="p-4 border-t border-slate-700 bg-slate-800/40">
+        <div className="p-2 sm:p-4 border-t border-slate-700 bg-slate-800/40">
           <div className="max-w-4xl mx-auto">
-            <div className="bg-slate-800/80 border border-slate-600 rounded-2xl p-3 shadow-lg">
-              <div className="flex items-end gap-2">
+            <div className="bg-slate-800/80 border border-slate-600 rounded-xl sm:rounded-2xl p-2 sm:p-3 shadow-lg">
+              <div className="flex items-end gap-1 sm:gap-2">
                 <textarea
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   onKeyDown={onKeyDown}
                   placeholder={
                     hasSelection
-                      ? "Escribe tu consulta... (Enter para enviar, Shift+Enter para nueva línea)"
+                      ? "Escribe tu consulta..."
                       : "Creá una conversación para empezar…"
                   }
                   disabled={!hasSelection || sending}
                   rows={1}
-                  className="flex-1 bg-transparent text-white placeholder-slate-400 border-none outline-none resize-none min-h-[44px] max-h-[200px]"
+                  className="flex-1 bg-transparent text-white placeholder-slate-400 border-none outline-none resize-none min-h-[40px] sm:min-h-[44px] max-h-[200px] text-sm sm:text-base"
                 />
                 <button
                   onClick={onSend}
                   disabled={!hasSelection || sending || !input.trim()}
-                  className="bg-blue-600 hover:bg-blue-700 disabled:bg-slate-600 text-white px-4 py-3 rounded-xl transition-colors inline-flex items-center gap-2"
+                  className="bg-blue-600 hover:bg-blue-700 disabled:bg-slate-600 text-white px-2 sm:px-4 py-2 sm:py-3 rounded-lg sm:rounded-xl transition-colors inline-flex items-center gap-1 sm:gap-2 flex-shrink-0"
                 >
                   {sending ? (
                     <>
                       <Loader2 className="w-4 h-4 animate-spin" />
-                      Enviando
+                      <span className="hidden sm:inline">Enviando</span>
                     </>
                   ) : (
                     <>
                       <Send className="w-4 h-4" />
-                      Enviar
+                      <span className="hidden sm:inline">Enviar</span>
                     </>
                   )}
                 </button>

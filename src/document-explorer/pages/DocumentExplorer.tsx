@@ -332,18 +332,18 @@ export const DocumentExplorerPage: React.FC = () => {
   return (
     <div className="h-full flex flex-col bg-slate-900 text-white">
       {/* Header */}
-      <div className="bg-slate-800 border-b border-slate-700 p-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold">Explorador de Documentos</h1>
-            <p className="text-sm text-slate-400 mt-1">
+      <div className="bg-slate-800 border-b border-slate-700 p-2 sm:p-4">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0">
+          <div className="min-w-0 flex-1">
+            <h1 className="text-lg sm:text-2xl font-bold">Explorador de Documentos</h1>
+            <p className="text-xs sm:text-sm text-slate-400 mt-1">
               Haz doble clic en un archivo para consultar con la IA
             </p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 w-full sm:w-auto">
             <button
               onClick={() => selectedSource && loadFiles(selectedSource.id, currentFolderId)}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors"
+              className="flex items-center gap-1 sm:gap-2 px-3 sm:px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors text-sm sm:text-base flex-1 sm:flex-initial justify-center"
             >
               <RefreshCw className="w-4 h-4" />
               Actualizar
@@ -353,7 +353,7 @@ export const DocumentExplorerPage: React.FC = () => {
 
         {/* Source Selector */}
         {sources.length > 0 && (
-          <div className="mt-4 flex items-center gap-2">
+          <div className="mt-2 sm:mt-4 flex items-center gap-2">
             <select
               value={selectedSource?.id || ''}
               onChange={(e) => {
@@ -365,7 +365,7 @@ export const DocumentExplorerPage: React.FC = () => {
                   loadFiles(source.id);
                 }
               }}
-              className="flex-1 md:flex-initial px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg focus:outline-none focus:border-blue-500"
+              className="flex-1 md:flex-initial px-2 sm:px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg focus:outline-none focus:border-blue-500 text-sm sm:text-base"
             >
               {sources.map(source => (
                 <option key={source.id} value={source.id}>
@@ -376,7 +376,7 @@ export const DocumentExplorerPage: React.FC = () => {
             {isAdmin && selectedSource && (
               <button
                 onClick={() => handleEditSource(selectedSource)}
-                className="px-3 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg transition-colors"
+                className="px-2 sm:px-3 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg transition-colors flex-shrink-0"
                 title="Editar fuente"
               >
                 <Edit className="w-4 h-4" />
@@ -387,33 +387,33 @@ export const DocumentExplorerPage: React.FC = () => {
 
         {/* Breadcrumb Navigation */}
         {sources.length > 0 && breadcrumb.length > 0 && (
-          <div className="mt-4 flex items-center gap-2">
+          <div className="mt-2 sm:mt-4 flex items-center gap-1 sm:gap-2">
             {/* Botón Atrás */}
             <button
               onClick={goBack}
               disabled={breadcrumb.length <= 1}
-              className="p-2 rounded-lg hover:bg-slate-700 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+              className="p-1.5 sm:p-2 rounded-lg hover:bg-slate-700 transition-colors disabled:opacity-30 disabled:cursor-not-allowed flex-shrink-0"
               title="Volver atrás"
             >
-              <ArrowLeft className="w-5 h-5" />
+              <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5" />
             </button>
 
             {/* Breadcrumb Path */}
             <div className="flex items-center gap-1 flex-1 overflow-x-auto">
               <button
                 onClick={() => navigateToBreadcrumb(0)}
-                className="flex items-center gap-1 px-3 py-1.5 rounded-lg hover:bg-slate-700 transition-colors text-sm"
+                className="flex items-center gap-1 px-2 sm:px-3 py-1.5 rounded-lg hover:bg-slate-700 transition-colors text-xs sm:text-sm flex-shrink-0"
               >
-                <Home className="w-4 h-4" />
-                <span>Raíz</span>
+                <Home className="w-3 h-3 sm:w-4 sm:h-4" />
+                <span className="hidden sm:inline">Raíz</span>
               </button>
 
               {breadcrumb.slice(1).map((item, index) => (
                 <React.Fragment key={item.id || index}>
-                  <ChevronRight className="w-4 h-4 text-slate-500 flex-shrink-0" />
+                  <ChevronRight className="w-3 h-3 sm:w-4 sm:h-4 text-slate-500 flex-shrink-0" />
                   <button
                     onClick={() => navigateToBreadcrumb(index + 1)}
-                    className="px-3 py-1.5 rounded-lg hover:bg-slate-700 transition-colors text-sm whitespace-nowrap"
+                    className="px-2 sm:px-3 py-1.5 rounded-lg hover:bg-slate-700 transition-colors text-xs sm:text-sm whitespace-nowrap"
                   >
                     {item.name}
                   </button>
@@ -425,7 +425,7 @@ export const DocumentExplorerPage: React.FC = () => {
       </div>
 
       {/* File List */}
-      <div className="flex-1 overflow-auto p-4">
+      <div className="flex-1 overflow-auto p-2 sm:p-4">
         {loading ? (
           <div className="flex items-center justify-center h-full">
             <div className="text-slate-400">Cargando archivos...</div>

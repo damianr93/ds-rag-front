@@ -76,12 +76,12 @@ const Navbar: React.FC<NavbarProps> = ({
   sidebarCollapsed,
   onShowReadme,
 }) => (
-  <nav className="bg-slate-800/90 backdrop-blur-sm border-b border-slate-700 px-4 py-3 relative z-30">
-    <div className="flex items-center justify-between">
-      <div className="flex items-center space-x-4">
+  <nav className="bg-slate-800/90 backdrop-blur-sm border-b border-slate-700 px-2 sm:px-4 py-2 sm:py-3 relative z-30">
+    <div className="flex items-center justify-between gap-2">
+      <div className="flex items-center space-x-2 sm:space-x-4 min-w-0 flex-1">
         <button
           onClick={onToggleSidebar}
-          className="text-slate-400 hover:text-white transition-colors p-2 hover:bg-slate-700 rounded-lg"
+          className="text-slate-400 hover:text-white transition-colors p-2 hover:bg-slate-700 rounded-lg flex-shrink-0"
         >
           {sidebarCollapsed ? (
             <Menu className="w-5 h-5" />
@@ -89,33 +89,34 @@ const Navbar: React.FC<NavbarProps> = ({
             <ChevronLeft className="w-5 h-5" />
           )}
         </button>
-        <div className="flex items-center space-x-3">
-          <div className="bg-blue-600 w-10 h-10 rounded-full flex items-center justify-center shadow-lg">
-            <Building2 className="w-5 h-5 text-white" />
+        <div className="flex items-center space-x-2 sm:space-x-3 min-w-0">
+          <div className="bg-blue-600 w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center shadow-lg flex-shrink-0">
+            <Building2 className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
           </div>
-          <div>
-            <h1 className="text-xl font-bold text-white">RAG Interno</h1>
+          <div className="min-w-0">
+            <h1 className="text-base sm:text-xl font-bold text-white truncate">RAG Interno</h1>
             <p className="text-xs text-slate-400 hidden sm:block"></p>
           </div>
         </div>
       </div>
 
-      <div className="flex items-center space-x-4">
+      <div className="flex items-center space-x-1 sm:space-x-4 flex-shrink-0">
         <button
           onClick={onShowReadme}
-          className="flex items-center space-x-2 bg-slate-700 hover:bg-blue-600 text-white px-3 py-2 rounded-lg transition-all duration-200 group"
+          className="flex items-center space-x-1 sm:space-x-2 bg-slate-700 hover:bg-blue-600 text-white px-2 sm:px-3 py-2 rounded-lg transition-all duration-200 group"
           title="Descargo de responsabilidades"
         >
           <FileText className="w-4 h-4 group-hover:scale-110 transition-transform" />
-          <span className="text-sm hidden sm:inline">README</span>
+          <span className="text-sm hidden md:inline">README</span>
         </button>
-        <div className="hidden sm:flex items-center space-x-2 bg-slate-700/50 px-3 py-2 rounded-lg">
+        <div className="hidden md:flex items-center space-x-2 bg-slate-700/50 px-3 py-2 rounded-lg">
           <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-          <span className="text-slate-300 text-sm">{user}</span>
+          <span className="text-slate-300 text-sm truncate max-w-[100px]">{user}</span>
         </div>
         <button
           onClick={onLogout}
-          className="flex items-center space-x-2 bg-slate-700 hover:bg-red-600 text-white px-3 py-2 rounded-lg transition-all duration-200 group"
+          className="flex items-center space-x-1 sm:space-x-2 bg-slate-700 hover:bg-red-600 text-white px-2 sm:px-3 py-2 rounded-lg transition-all duration-200 group"
+          title="Salir"
         >
           <LogOut className="w-4 h-4 group-hover:rotate-12 transition-transform" />
           <span className="text-sm hidden sm:inline">Salir</span>
@@ -187,16 +188,18 @@ const Sidebar: React.FC<SidebarProps> = ({
   return (
     <div
       className={`bg-slate-800/95 backdrop-blur-sm border-r border-slate-700 transition-all duration-300 ${
-        collapsed ? "w-16" : "w-72"
-      } flex-shrink-0 relative z-20 flex flex-col`}
+        collapsed ? "w-14" : "w-72"
+      } flex-shrink-0 relative z-30 flex flex-col h-full w-72 lg:w-auto`}
     >
       {/* Logo Section */}
       <div
-        className={`p-4 border-b border-slate-700 ${collapsed ? "px-2" : ""}`}
+        className={`border-b border-slate-700 ${collapsed ? "p-2" : "p-4"}`}
       >
-        <div className="flex items-center space-x-3">
-          <div className="bg-blue-600 w-10 h-10 rounded-xl flex items-center justify-center shadow-lg flex-shrink-0">
-            <Bot className="w-5 h-5 text-white" />
+        <div className={`flex items-center ${collapsed ? "justify-center" : "space-x-3"}`}>
+          <div className={`bg-blue-600 rounded-xl flex items-center justify-center shadow-lg flex-shrink-0 ${
+            collapsed ? "w-10 h-10" : "w-10 h-10"
+          }`}>
+            <Bot className={`text-white ${collapsed ? "w-5 h-5" : "w-5 h-5"}`} />
           </div>
           {!collapsed && (
             <div className="min-w-0">
@@ -208,7 +211,7 @@ const Sidebar: React.FC<SidebarProps> = ({
       </div>
 
       {/* Navigation */}
-      <div className="p-3 space-y-2 flex-1 overflow-y-auto">
+      <div className={`space-y-2 flex-1 overflow-y-auto ${collapsed ? "p-2" : "p-3"}`}>
         {(() => {
           const filteredItems = menuItems.filter(item => item.enabled);
           console.log("📋 All menuItems:", menuItems);
@@ -223,10 +226,11 @@ const Sidebar: React.FC<SidebarProps> = ({
               <button
                 onClick={() => item.enabled && onNavigate(item.path)}
                 disabled={!item.enabled}
-                className={`w-full flex items-center space-x-3 px-3 py-3 rounded-xl transition-all duration-200 ${getItemColors(
-                  item,
-                  isActive
-                )}`}
+                className={`w-full flex items-center rounded-xl transition-all duration-200 ${
+                  collapsed 
+                    ? "justify-center px-2 py-2" 
+                    : "space-x-3 px-3 py-3"
+                } ${getItemColors(item, isActive)}`}
               >
                 <Icon className="w-5 h-5 flex-shrink-0" />
                 {!collapsed && (
@@ -268,9 +272,9 @@ const Sidebar: React.FC<SidebarProps> = ({
       </div>
 
       <div
-        className={`p-4 border-t border-slate-700 space-y-3 ${collapsed ? "px-2" : ""}`}
+        className={`border-t border-slate-700 space-y-3 ${collapsed ? "p-2" : "p-4"}`}
       >
-        <div className="flex items-center space-x-3 text-slate-400">
+        <div className={`flex items-center text-slate-400 ${collapsed ? "justify-center" : "space-x-3"}`}>
           <Building2 className="w-4 h-4 flex-shrink-0" />
           {!collapsed && (
             <div className="min-w-0">
@@ -281,10 +285,14 @@ const Sidebar: React.FC<SidebarProps> = ({
         </div>
       
         {/* Logo placeholder - espacio reservado para logo de la empresa */}
-        <div className="flex items-center justify-center p-3 bg-slate-900/30 rounded-lg border border-slate-700/50">
-          <div className="text-xs text-slate-500 text-center">
-            Logo de la empresa
-          </div>
+        <div className={`flex items-center justify-center bg-slate-900/30 rounded-lg border border-slate-700/50 ${
+          collapsed ? "p-2" : "p-3"
+        }`}>
+          {!collapsed && (
+            <div className="text-xs text-slate-500 text-center">
+              Logo de la empresa
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -299,7 +307,14 @@ const UserLayout: React.FC<UserLayoutProps> = ({
   disclaimerAccepted,
 }) => {
   const dispatch = useDispatch<AppDispatch>();
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  // En móvil, empezar con sidebar oculto; en desktop, visible pero colapsado
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
+    // En móvil (< 1024px), empezar oculto
+    if (typeof window !== 'undefined' && window.innerWidth < 1024) {
+      return true;
+    }
+    return false;
+  });
   const navigate = useNavigate();
   const location = useLocation();
   const currentPath = location.pathname;
@@ -346,15 +361,36 @@ const UserLayout: React.FC<UserLayoutProps> = ({
         onShowReadme={handleShowReadme}
       />
 
-      <div className="flex flex-1 overflow-hidden">
-        <Sidebar
-          collapsed={sidebarCollapsed}
-          currentPath={currentPath}
-          onNavigate={handleNavigate}
-          disclaimerAccepted={disclaimerAccepted}
-        />
+      <div className="flex flex-1 overflow-hidden relative">
+        {/* Overlay para móvil - debe estar antes del sidebar para z-index correcto */}
+        {!sidebarCollapsed && (
+          <div 
+            className="fixed inset-0 bg-black/50 z-20 lg:hidden"
+            onClick={handleToggleSidebar}
+          />
+        )}
+        
+        {/* Sidebar - Oculto en móvil cuando collapsed, overlay cuando está abierto */}
+        <div className={`
+          fixed lg:static inset-y-0 left-0 z-30
+          transition-transform duration-300 ease-in-out
+          ${sidebarCollapsed ? '-translate-x-full lg:translate-x-0' : 'translate-x-0'}
+        `}>
+          <Sidebar
+            collapsed={sidebarCollapsed}
+            currentPath={currentPath}
+            onNavigate={(path) => {
+              handleNavigate(path);
+              // Cerrar sidebar en móvil después de navegar
+              if (window.innerWidth < 1024) {
+                setSidebarCollapsed(true);
+              }
+            }}
+            disclaimerAccepted={disclaimerAccepted}
+          />
+        </div>
 
-        <main className="flex-1 overflow-auto bg-gradient-to-br from-slate-900 via-blue-900/10 to-slate-800">
+        <main className="flex-1 overflow-auto bg-gradient-to-br from-slate-900 via-blue-900/10 to-slate-800 w-full lg:w-auto">
           {children}
         </main>
       </div>
