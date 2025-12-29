@@ -215,19 +215,18 @@ const ChatWindow: React.FC<{
                   : "bg-slate-800/80 border border-slate-700 text-slate-200"
               }`}
             >
-              <div className="whitespace-pre-wrap break-words overflow-wrap-anywhere">
+              <div className="whitespace-pre-wrap break-words overflow-wrap-anywhere prose prose-invert prose-sm max-w-none
+                prose-headings:text-slate-100
+                prose-p:text-slate-200 prose-p:break-words
+                prose-strong:text-white
+                prose-code:text-slate-100 prose-code:bg-slate-900/50 prose-code:px-1 prose-code:py-0.5 prose-code:rounded
+                prose-pre:bg-slate-900 prose-pre:text-slate-200 prose-pre:overflow-x-auto
+                prose-ul:text-slate-200 prose-ol:text-slate-200
+                prose-li:text-slate-200
+                prose-a:text-blue-400 prose-a:break-all
+                prose-table:w-full prose-table:overflow-x-auto
+                prose-blockquote:text-slate-300">
                 <ReactMarkdown
-                  className="prose prose-invert prose-sm max-w-none
-                    prose-headings:text-slate-100
-                    prose-p:text-slate-200 prose-p:break-words
-                    prose-strong:text-white
-                    prose-code:text-slate-100 prose-code:bg-slate-900/50 prose-code:px-1 prose-code:py-0.5 prose-code:rounded
-                    prose-pre:bg-slate-900 prose-pre:text-slate-200 prose-pre:overflow-x-auto
-                    prose-ul:text-slate-200 prose-ol:text-slate-200
-                    prose-li:text-slate-200
-                    prose-a:text-blue-400 prose-a:break-all
-                    prose-table:w-full prose-table:overflow-x-auto
-                    prose-blockquote:text-slate-300"
                   components={{
                     // Asegurar que tablas y código no causen overflow
                     table: ({ node, ...props }) => (
