@@ -1,7 +1,8 @@
 // Constantes compartidas para toda la aplicación
 
-// URL base del backend
-export const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+// URL base del backend - usar configuración centralizada
+import { API_CONFIG } from '../config/api';
+export const API_BASE_URL = API_CONFIG.baseURL;
 
 export const API_ENDPOINTS = {
   // Auth
