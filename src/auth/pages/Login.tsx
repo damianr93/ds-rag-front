@@ -125,7 +125,7 @@ export const Login: React.FC = () => {
           <h1 className="text-2xl font-bold text-white mb-2">
             RAG Interno
           </h1>
-          <p className="text-slate-400 text-sm">Gestion de noticias, y IA-RAG</p>
+          <p className="text-slate-400 text-sm">Sistema de RAG para tu documentación</p>
         </div>
 
         {/* Toggle Login/Register */}
