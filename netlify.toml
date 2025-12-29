@@ -1,0 +1,24 @@
+# Configuración de Netlify para SPA con React Router
+
+[build]
+  # Comando de build (Vite ya lo tiene en package.json)
+  command = "npm run build"
+  # Directorio de salida
+  publish = "dist"
+
+# Redirecciones para SPA
+# Todas las rutas deben ir al index.html para que React Router funcione
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+# Headers de seguridad (opcional pero recomendado)
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-XSS-Protection = "1; mode=block"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+
