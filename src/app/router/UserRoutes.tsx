@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import {
   Menu,
@@ -9,7 +9,6 @@ import {
   ChevronLeft,
   FileText,
   Lock,
-  Code2,
   MessageSquare,
   Settings,
 } from "lucide-react";
@@ -68,132 +67,7 @@ interface UserLayoutProps {
   disclaimerAccepted: boolean;
 }
 
-const BinaryMessage: React.FC<{ collapsed: boolean }> = ({ collapsed }) => {
-  const [visibleChars, setVisibleChars] = useState(0);
-  const [expanded, setExpanded] = useState(false);
-  const intervalRef = useRef<number | null>(null);
-  const timeoutRef = useRef<number | null>(null);
-  const REVEAL_STEP_MS = 120;
-  const STAGGER_MS = 15;
-  const HOLD_AT_END_MS = 1200;
-  const COLLAPSED_MAX_HEIGHT_PX = 48;
-  const binaryMessage = "01000101 01000101 00100000 01001110 01010011 01000001 01001000 01011010 00100000 01001110 00100000 01001010 01001111 01001001 01001010 01000101 01000001 00100000 01010101 01011010 01001000 01001110 01001111 00100000 01011000 01001011 01010010 01000111 01010100 00100000 01000111 00100000 01010000 01000001 01010010 01000011 01010101 01010111 00100000 01001110 01000101 01001010 01010010 01010010 01010100 01000110 00100000 01011001 01000101 01010000 01000001 01001101 01000101 01001001";
-  const binaryLines = binaryMessage.split(' ');
-  useEffect(() => {
-    setVisibleChars(0);
-  }, [collapsed]);
-  useEffect(() => {
-    const startLoop = () => {
-      if (intervalRef.current) window.clearInterval(intervalRef.current);
-      if (timeoutRef.current) window.clearTimeout(timeoutRef.current);
-      intervalRef.current = window.setInterval(() => {
-        setVisibleChars((prev) => {
-          if (prev < binaryLines.length) {
-            return prev + 1;
-          }
-          if (intervalRef.current) {
-            window.clearInterval(intervalRef.current);
-            intervalRef.current = null;
-          }
-          timeoutRef.current = window.setTimeout(() => {
-            setVisibleChars(0);
-            startLoop();
-          }, HOLD_AT_END_MS);
-          return prev;
-        });
-      }, REVEAL_STEP_MS);
-    };
-    startLoop();
-    return () => {
-      if (intervalRef.current) window.clearInterval(intervalRef.current);
-      if (timeoutRef.current) window.clearTimeout(timeoutRef.current);
-    };
-  }, [binaryLines.length]);
-  if (collapsed) {
-    return (
-      <div className="relative group">
-        <div className="flex items-center justify-center p-3 bg-slate-900/30 rounded-lg border border-slate-700/50 hover:border-blue-500/50 transition-all duration-300 cursor-pointer">
-          <Code2 className="w-4 h-4 text-blue-400 animate-pulse" />
-        </div>
-        
-        <div className="absolute left-full ml-2 bottom-0 bg-slate-900/95 backdrop-blur-sm text-white px-3 py-2 rounded-lg shadow-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none whitespace-nowrap z-50 border border-slate-700">
-          <div className="text-xs font-mono text-green-400 leading-relaxed">
-            {binaryLines.slice(0, 3).join(' ')}...
-          </div>
-        </div>
-      </div>
-    );
-  }
-  return (
-    <div className="relative overflow-hidden bg-gradient-to-r from-slate-900/50 via-slate-800/50 to-slate-900/50 rounded-lg border border-slate-700/50 p-3">
-      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-blue-500/5 to-transparent animate-shimmer"></div>
-      
-      <div className="relative">
-        <div className="flex items-center justify-between mb-2">
-          <div className="flex items-center space-x-2">
-            <Code2 className="w-3.5 h-3.5 text-blue-400" />
-            <span className="text-xs font-medium text-slate-400">Sistema</span>
-          </div>
-          <div className="flex space-x-1">
-            <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></div>
-            <div className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-pulse" style={{ animationDelay: '0.2s' }}></div>
-            <div className="w-1.5 h-1.5 bg-purple-500 rounded-full animate-pulse" style={{ animationDelay: '0.4s' }}></div>
-          </div>
-        </div>
-        
-        <div
-          className="relative font-mono text-[10px] leading-relaxed text-green-400/80 break-all transition-[max-height] duration-300"
-          style={{
-            maxHeight: expanded ? undefined : `${COLLAPSED_MAX_HEIGHT_PX}px`,
-            overflow: expanded ? 'visible' : 'hidden',
-          }}
-        >
-          {binaryLines.map((line, idx) => (
-            <span
-              key={idx}
-              className={`inline-block transition-opacity duration-300 ${
-                idx < visibleChars ? 'opacity-100' : 'opacity-30'
-              }`}
-              style={{
-                transitionDelay: `${idx * STAGGER_MS}ms`
-              }}
-            >
-              {line}{' '}
-            </span>
-          ))}
-          {!expanded && (
-            <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-6 bg-gradient-to-t from-slate-900/80 to-transparent" />
-          )}
-        </div>
-        
-        <div className="mt-2 pt-2 border-t border-slate-700/50">
-          <div className="text-[10px] text-slate-500 flex items-center justify-between">
-            <span>GyS</span>
-            <div className="flex items-center gap-3">
-              <span className="text-blue-400/60">● Activo</span>
-              <button
-                className="text-[10px] text-slate-300 hover:text-white hover:underline"
-                onClick={() => setExpanded((s) => !s)}
-              >
-                {expanded ? 'Ver 3 líneas' : 'Ver todo'}
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-      
-      <style>{`
-        @keyframes shimmer {
-          0% { transform: translateX(-100%); }
-          100% { transform: translateX(100%); }
-        }
-        .animate-shimmer {
-          animation: shimmer 3s infinite;
-        }
-      `}</style>
-    </div>
-  );
-};
+// BinaryMessage component removed - logo placeholder for future company logo
 
 const Navbar: React.FC<NavbarProps> = ({
   user,
@@ -220,7 +94,7 @@ const Navbar: React.FC<NavbarProps> = ({
             <Building2 className="w-5 h-5 text-white" />
           </div>
           <div>
-            <h1 className="text-xl font-bold text-white">GyS</h1>
+            <h1 className="text-xl font-bold text-white">RAG Interno</h1>
             <p className="text-xs text-slate-400 hidden sm:block"></p>
           </div>
         </div>
@@ -406,7 +280,12 @@ const Sidebar: React.FC<SidebarProps> = ({
           )}
         </div>
       
-        <BinaryMessage collapsed={collapsed} />
+        {/* Logo placeholder - espacio reservado para logo de la empresa */}
+        <div className="flex items-center justify-center p-3 bg-slate-900/30 rounded-lg border border-slate-700/50">
+          <div className="text-xs text-slate-500 text-center">
+            Logo de la empresa
+          </div>
+        </div>
       </div>
     </div>
   );

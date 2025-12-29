@@ -123,7 +123,7 @@ export const Login: React.FC = () => {
             <Bot className="w-8 h-8 text-white" />
           </div>
           <h1 className="text-2xl font-bold text-white mb-2">
-            GyS
+            RAG Interno
           </h1>
           <p className="text-slate-400 text-sm">Gestion de noticias, y IA-RAG</p>
         </div>
