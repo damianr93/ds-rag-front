@@ -218,10 +218,12 @@ const ChatWindow: React.FC<{
                   remarkPlugins={[remarkGfm]}
                   components={{
                     table: ({ children }) => (
-                      <div className="overflow-x-auto my-4 -mx-4">
-                        <table className="min-w-full border-collapse border border-slate-600 text-sm">
-                          {children}
-                        </table>
+                      <div className="w-full overflow-x-auto my-4" style={{ maxWidth: '100%' }}>
+                        <div className="inline-block min-w-full">
+                          <table className="min-w-full border-collapse border border-slate-600 text-sm">
+                            {children}
+                          </table>
+                        </div>
                       </div>
                     ),
                     thead: ({ children }) => (
@@ -234,7 +236,7 @@ const ChatWindow: React.FC<{
                       <tr className="hover:bg-slate-700/30 transition-colors">{children}</tr>
                     ),
                     th: ({ children }) => (
-                      <th className="border border-slate-600 px-4 py-2 text-left font-semibold text-slate-200 bg-slate-700/60">
+                      <th className="border border-slate-600 px-4 py-2 text-left font-semibold text-slate-200 bg-slate-700/60 whitespace-nowrap">
                         {children}
                       </th>
                     ),
