@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Play, X, CheckCircle, XCircle, Info, AlertTriangle, Loader } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { API_BASE_URL } from '../../shared/constants';
+import { isUserAdmin } from '../../shared/utils/jwtHelper';
 
 interface SyncLog {
   timestamp: string;
@@ -19,11 +20,15 @@ interface SyncResult {
 }
 
 export const RagSyncPanel: React.FC = () => {
+  const isAdmin = isUserAdmin();
   const [isOpen, setIsOpen] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
   const [logs, setLogs] = useState<SyncLog[]>([]);
   const [result, setResult] = useState<SyncResult | null>(null);
   const logsEndRef = useRef<HTMLDivElement>(null);
+
+  // No renderizar si no es admin
+  if (!isAdmin) return null;
 
   useEffect(() => {
     // Auto-scroll al último log
@@ -57,8 +62,10 @@ export const RagSyncPanel: React.FC = () => {
 
       if (data.success) {
         toast.success(`Sincronización completada: ${data.processedCount} archivos procesados`);
+        window.dispatchEvent(new CustomEvent('rag-sync-completed'));
       } else {
         toast.error('Sincronización completada con errores');
+        window.dispatchEvent(new CustomEvent('rag-sync-completed'));
       }
     } catch (error) {
       console.error('Error syncing:', error);

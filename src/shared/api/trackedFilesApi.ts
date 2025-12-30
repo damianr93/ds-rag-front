@@ -91,5 +91,20 @@ export const trackedFilesApi = {
 
     return response.json();
   },
+
+  async unragFile(sourceId: number, fileId: string): Promise<void> {
+    const token = localStorage.getItem('auth_token');
+    const response = await fetch(`${API_BASE_URL}/api/tracked-files/${sourceId}/${fileId}/unrag`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Error al des-ragear archivo');
+    }
+  },
 };
 

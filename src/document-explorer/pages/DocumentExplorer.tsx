@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Folder, File, RefreshCw, Settings, X, Edit, ChevronRight, Home, ArrowLeft, CheckSquare, Square, Search, ArrowUpDown } from 'lucide-react';
+import { Folder, File, RefreshCw, Settings, X, Edit, ChevronRight, Home, ArrowLeft, CheckSquare, Square, Search, ArrowUpDown, Loader2, Trash2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { API_BASE_URL } from '../../shared/constants';
@@ -34,7 +34,6 @@ interface DocumentSource {
 
 export const DocumentExplorerPage: React.FC = () => {
   const navigate = useNavigate();
-  // ✅ SEGURO: Obtenemos el rol desde el JWT
   const isAdmin = isUserAdmin();
   
   const [sources, setSources] = useState<DocumentSource[]>([]);
@@ -57,17 +56,58 @@ export const DocumentExplorerPage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<'type' | 'name' | 'date'>('type');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+  const [togglingFileId, setTogglingFileId] = useState<string | null>(null);
+  const [unraggingFileId, setUnraggingFileId] = useState<string | null>(null);
 
-  // Filtrar y ordenar archivos - siempre se ejecuta (no condicional)
   const filteredAndSortedFiles = useMemo(() => {
-    // Filtrar archivos por búsqueda
     let filteredFiles = files.filter(file =>
       file.name.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
-    // Ordenar archivos
+    if (!isAdmin) {
+      filteredFiles = filteredFiles.filter(file => {
+        if (file.isFolder) {
+          const tracked = trackedFilesMap[file.id];
+          
+          if (tracked) {
+            return tracked.status !== 'error';
+          }
+          
+          const hasProcessedFiles = Object.values(trackedFilesMap).some((trackedFile: any) => {
+            const filePath = trackedFile.filePath || '';
+            const isInFolder = filePath.includes(file.name + '/') || 
+                              filePath.startsWith(file.name + '/') ||
+                              (filePath === file.name && trackedFile.isFolder);
+            
+            return isInFolder && trackedFile.status === 'completed' && trackedFile.lastProcessedAt !== null;
+          });
+          
+          return hasProcessedFiles;
+        }
+        
+        const tracked = trackedFilesMap[file.id];
+        if (!tracked) {
+          const trackedByName = Object.values(trackedFilesMap).find((t: any) => 
+            t.fileName === file.name && !t.isFolder
+          );
+          if (trackedByName) {
+            return true;
+          }
+          const trackedByPartialName = Object.values(trackedFilesMap).find((t: any) => 
+            (t.fileName.includes(file.name) || file.name.includes(t.fileName)) && 
+            !t.isFolder
+          );
+          if (trackedByPartialName) {
+            return true;
+          }
+          return false;
+        }
+        
+        return true;
+      });
+    }
+
     filteredFiles.sort((a, b) => {
-      // Ordenar por tipo: carpetas primero
       if (sortBy === 'type') {
         if (a.isFolder !== b.isFolder) {
           return sortOrder === 'asc' 
@@ -76,7 +116,6 @@ export const DocumentExplorerPage: React.FC = () => {
         }
       }
 
-      // Ordenar por nombre
       if (sortBy === 'name') {
         const nameA = a.name.toLowerCase();
         const nameB = b.name.toLowerCase();
@@ -85,7 +124,6 @@ export const DocumentExplorerPage: React.FC = () => {
         return 0;
       }
 
-      // Ordenar por fecha
       if (sortBy === 'date') {
         const dateA = a.modifiedTime ? new Date(a.modifiedTime).getTime() : 0;
         const dateB = b.modifiedTime ? new Date(b.modifiedTime).getTime() : 0;
@@ -94,7 +132,6 @@ export const DocumentExplorerPage: React.FC = () => {
         return 0;
       }
 
-      // Por defecto, mantener orden original pero carpetas primero
       if (a.isFolder !== b.isFolder) {
         return a.isFolder ? -1 : 1;
       }
@@ -102,7 +139,7 @@ export const DocumentExplorerPage: React.FC = () => {
     });
 
     return filteredFiles;
-  }, [files, searchQuery, sortBy, sortOrder]);
+  }, [files, searchQuery, sortBy, sortOrder, isAdmin, trackedFilesMap]);
 
   useEffect(() => {
     loadSources();
@@ -112,6 +149,19 @@ export const DocumentExplorerPage: React.FC = () => {
     if (selectedSource) {
       loadTrackedFiles();
     }
+  }, [selectedSource]);
+
+  useEffect(() => {
+    const handleSyncCompleted = () => {
+      if (selectedSource) {
+        loadTrackedFiles();
+      }
+    };
+
+    window.addEventListener('rag-sync-completed', handleSyncCompleted);
+    return () => {
+      window.removeEventListener('rag-sync-completed', handleSyncCompleted);
+    };
   }, [selectedSource]);
 
   const loadSources = async () => {
@@ -133,10 +183,9 @@ export const DocumentExplorerPage: React.FC = () => {
       if (data.length > 0) {
         setSelectedSource(data[0]);
         setBreadcrumb([{ id: undefined, name: 'Raíz' }]);
-        loadFiles(data[0].id, undefined, true); // silent=true para evitar toast duplicado al cargar inicial
+        loadFiles(data[0].id, undefined, true);
       }
     } catch (error) {
-      console.error('Error loading sources:', error);
       toast.error(error instanceof Error ? error.message : 'Error al cargar fuentes');
     }
   };
@@ -164,26 +213,23 @@ export const DocumentExplorerPage: React.FC = () => {
       setFiles(data);
       setCurrentFolderId(folderId);
       
-      // Actualizar breadcrumb
+      if (!isAdmin && selectedSource) {
+        loadTrackedFiles();
+      }
+      
       if (!folderId) {
-        // Estamos en la raíz
         setBreadcrumb([{ id: undefined, name: 'Raíz' }]);
       } else if (folderName) {
-        // Agregamos la carpeta al breadcrumb
         const existingIndex = breadcrumb.findIndex(item => item.id === folderId);
         if (existingIndex >= 0) {
-          // Ya existe, cortamos el breadcrumb hasta ese punto
           setBreadcrumb(breadcrumb.slice(0, existingIndex + 1));
         } else {
-          // Nueva carpeta, la agregamos
           setBreadcrumb([...breadcrumb, { id: folderId, name: folderName }]);
         }
       }
       
-      // Actualizar historial de navegación
       setNavigationHistory([...navigationHistory, folderId]);
     } catch (error) {
-      console.error('Error loading files:', error);
       const errorMessage = error instanceof Error ? error.message : 'Error al cargar archivos';
       if (!silent) {
         toast.error(errorMessage, { autoClose: 5000 });
@@ -195,28 +241,29 @@ export const DocumentExplorerPage: React.FC = () => {
   };
 
   const loadTrackedFiles = async () => {
-    if (!selectedSource) return;
+    if (!selectedSource) {
+      return;
+    }
     
     try {
       const map = await trackedFilesApi.getTrackedFilesMap(selectedSource.id);
       setTrackedFilesMap(map);
     } catch (error) {
-      console.error('Error loading tracked files:', error);
+      // Silent error
     }
   };
 
   const handleCheckboxChange = async (file: CloudFile) => {
-    if (!selectedSource) return;
+    if (!selectedSource || togglingFileId) return;
 
     const isTracked = trackedFilesMap[file.id];
+    setTogglingFileId(file.id);
     
     try {
       if (isTracked) {
-        // Desmarcar - remover del tracking
         await trackedFilesApi.untrackFile(selectedSource.id, file.id);
         toast.success(`${file.name} removido del RAG`);
       } else {
-        // Marcar - agregar al tracking
         await trackedFilesApi.trackFile({
           sourceId: selectedSource.id,
           fileId: file.id,
@@ -228,11 +275,37 @@ export const DocumentExplorerPage: React.FC = () => {
         toast.success(`${file.name} agregado al RAG (${file.isFolder ? 'incluye subcarpetas' : 'archivo'})`);
       }
       
-      // Recargar el mapa de archivos tracked
       await loadTrackedFiles();
     } catch (error) {
-      console.error('Error toggling file tracking:', error);
       toast.error(error instanceof Error ? error.message : 'Error al actualizar archivo');
+    } finally {
+      setTogglingFileId(null);
+    }
+  };
+
+  const handleUnragFile = async (file: CloudFile) => {
+    if (!selectedSource || unraggingFileId || file.isFolder) return;
+
+    const tracked = trackedFilesMap[file.id];
+    if (!tracked || tracked.status !== 'completed' || !tracked.lastProcessedAt) {
+      toast.warning('Este archivo no está procesado en el RAG');
+      return;
+    }
+
+    if (!window.confirm(`¿Estás seguro de que quieres des-ragear "${file.name}"? Esto eliminará todos los chunks vectorizados y el tracking del archivo.`)) {
+      return;
+    }
+
+    setUnraggingFileId(file.id);
+    
+    try {
+      await trackedFilesApi.unragFile(selectedSource.id, file.id);
+      toast.success(`${file.name} des-rageado exitosamente`);
+      await loadTrackedFiles();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Error al des-ragear archivo');
+    } finally {
+      setUnraggingFileId(null);
     }
   };
 
@@ -242,7 +315,14 @@ export const DocumentExplorerPage: React.FC = () => {
         loadFiles(selectedSource.id, file.id, false, file.name);
       }
     } else {
-      // Navegar al chat y preguntar sobre el archivo
+      if (!isAdmin) {
+        const tracked = trackedFilesMap[file.id];
+        if (!tracked || tracked.status !== 'completed' || !tracked.lastProcessedAt) {
+          toast.error('Este archivo aún no ha sido procesado. Solo puedes consultar archivos que ya están en el RAG.');
+          return;
+        }
+      }
+      
       navigate('/home', { 
         state: { 
           fileInfo: {
@@ -291,7 +371,6 @@ export const DocumentExplorerPage: React.FC = () => {
 
   const handleEditSource = async (source: DocumentSource) => {
     try {
-      // Obtener los datos completos con credenciales
       const token = localStorage.getItem('auth_token');
       const response = await fetch(`${API_BASE_URL}/api/document-sources/${source.id}?includeCredentials=true`, {
         headers: {
@@ -314,7 +393,6 @@ export const DocumentExplorerPage: React.FC = () => {
       });
       setShowEditSourceModal(true);
     } catch (error) {
-      console.error('Error loading source details:', error);
       toast.error('Error al cargar los detalles de la fuente');
     }
   };
@@ -322,7 +400,6 @@ export const DocumentExplorerPage: React.FC = () => {
   const handleUpdateSource = async () => {
     if (!editingSource) return;
 
-    // Validación: al menos un campo debe estar presente
     if (!editSourceForm.name && !editSourceForm.accessToken && !editSourceForm.folderId) {
       toast.warning('Completa al menos un campo para actualizar');
       return;
@@ -372,7 +449,6 @@ export const DocumentExplorerPage: React.FC = () => {
       });
       loadSources();
     } catch (error) {
-      console.error('Error updating source:', error);
       const errorMessage = error instanceof Error ? error.message : 'Error al actualizar la fuente';
       toast.error(errorMessage, { autoClose: 5000 });
     }
@@ -380,7 +456,6 @@ export const DocumentExplorerPage: React.FC = () => {
 
   return (
     <div className="h-full flex flex-col bg-slate-900 text-white">
-      {/* Header */}
       <div className="bg-slate-800 border-b border-slate-700 p-2 sm:p-4">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0">
           <div className="min-w-0 flex-1">
@@ -392,15 +467,15 @@ export const DocumentExplorerPage: React.FC = () => {
           <div className="flex gap-2 w-full sm:w-auto">
             <button
               onClick={() => selectedSource && loadFiles(selectedSource.id, currentFolderId)}
-              className="flex items-center gap-1 sm:gap-2 px-3 sm:px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors text-sm sm:text-base flex-1 sm:flex-initial justify-center"
+              disabled={loading}
+              className="flex items-center gap-1 sm:gap-2 px-3 sm:px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors text-sm sm:text-base flex-1 sm:flex-initial justify-center disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <RefreshCw className="w-4 h-4" />
+              <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
               Actualizar
             </button>
           </div>
         </div>
 
-        {/* Source Selector */}
         {sources.length > 0 && (
           <div className="mt-2 sm:mt-4 flex items-center gap-2">
             <select
@@ -434,10 +509,8 @@ export const DocumentExplorerPage: React.FC = () => {
           </div>
         )}
 
-        {/* Breadcrumb Navigation */}
         {sources.length > 0 && breadcrumb.length > 0 && (
           <div className="mt-2 sm:mt-4 flex items-center gap-1 sm:gap-2">
-            {/* Botón Atrás */}
             <button
               onClick={goBack}
               disabled={breadcrumb.length <= 1}
@@ -447,7 +520,6 @@ export const DocumentExplorerPage: React.FC = () => {
               <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5" />
             </button>
 
-            {/* Breadcrumb Path */}
             <div className="flex items-center gap-1 flex-1 overflow-x-auto">
               <button
                 onClick={() => navigateToBreadcrumb(0)}
@@ -473,11 +545,9 @@ export const DocumentExplorerPage: React.FC = () => {
         )}
       </div>
 
-      {/* Buscador y Ordenamiento */}
       {files.length > 0 && (
         <div className="bg-slate-800 border-b border-slate-700 p-2 sm:p-4">
           <div className="flex flex-col sm:flex-row gap-2 sm:gap-4">
-            {/* Buscador */}
             <div className="flex-1 relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
               <input
@@ -489,7 +559,6 @@ export const DocumentExplorerPage: React.FC = () => {
               />
             </div>
 
-            {/* Selector de Ordenamiento */}
             <div className="flex gap-2">
               <select
                 value={sortBy}
@@ -510,7 +579,6 @@ export const DocumentExplorerPage: React.FC = () => {
               </button>
             </div>
           </div>
-          {/* Contador de resultados */}
           {searchQuery && (
             <div className="mt-2 text-xs text-slate-400">
               {filteredAndSortedFiles.length} de {files.length} archivos
@@ -519,10 +587,10 @@ export const DocumentExplorerPage: React.FC = () => {
         </div>
       )}
 
-      {/* File List */}
       <div className="flex-1 overflow-auto p-2 sm:p-4">
         {loading ? (
-          <div className="flex items-center justify-center h-full">
+          <div className="flex flex-col items-center justify-center h-full">
+            <Loader2 className="w-8 h-8 text-blue-500 animate-spin mb-4" />
             <div className="text-slate-400">Cargando archivos...</div>
           </div>
         ) : files.length === 0 ? (
@@ -539,48 +607,70 @@ export const DocumentExplorerPage: React.FC = () => {
           <div className="space-y-1">
             {filteredAndSortedFiles.map(file => {
               const isTracked = !!trackedFilesMap[file.id];
+              const tracked = trackedFilesMap[file.id];
+              const isProcessed = tracked && tracked.status === 'completed' && tracked.lastProcessedAt !== null;
               return (
                 <div
                   key={file.id}
                   className="flex items-center gap-3 p-3 hover:bg-slate-800 rounded-lg transition-colors group"
                 >
-                  {/* Checkbox para seleccionar archivo/carpeta para RAG */}
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleCheckboxChange(file);
-                    }}
-                    className="flex-shrink-0 transition-colors"
-                    title={isTracked ? 'Quitar del RAG' : 'Agregar al RAG'}
-                  >
-                    {isTracked ? (
-                      <CheckSquare className="w-5 h-5 text-green-500" />
-                    ) : (
-                      <Square className="w-5 h-5 text-slate-600 group-hover:text-slate-400" />
-                    )}
-                  </button>
+                  {isAdmin && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleCheckboxChange(file);
+                      }}
+                      disabled={togglingFileId !== null}
+                      className="flex-shrink-0 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      title={togglingFileId === file.id ? 'Procesando...' : (isTracked ? 'Quitar del RAG' : 'Agregar al RAG')}
+                    >
+                      {togglingFileId === file.id ? (
+                        <Loader2 className="w-5 h-5 text-blue-500 animate-spin" />
+                      ) : isTracked ? (
+                        <CheckSquare className="w-5 h-5 text-green-500" />
+                      ) : (
+                        <Square className="w-5 h-5 text-slate-600 group-hover:text-slate-400" />
+                      )}
+                    </button>
+                  )}
 
-                  {/* Archivo/Carpeta - doble click para navegar o ver */}
                   <div
                     onDoubleClick={() => handleFileDoubleClick(file)}
-                    onClick={() => file.isFolder && toggleFolder(file.id)}
-                    className="flex items-center gap-2 flex-1 min-w-0 cursor-pointer"
+                    onClick={() => file.isFolder && !loading && toggleFolder(file.id)}
+                    className={`flex items-center gap-2 flex-1 min-w-0 ${file.isFolder && !loading ? 'cursor-pointer' : 'cursor-default'}`}
                   >
                     {file.isFolder ? (
-                      <Folder className="w-5 h-5 text-yellow-500 flex-shrink-0" />
+                      <Folder className={`w-5 h-5 text-yellow-500 flex-shrink-0 ${loading ? 'opacity-50' : ''}`} />
                     ) : (
                       <File className="w-5 h-5 text-blue-400 flex-shrink-0" />
                     )}
-                    <span className="truncate">{file.name}</span>
+                    <span className={`truncate ${loading && file.isFolder ? 'opacity-50' : ''}`}>{file.name}</span>
                   </div>
 
-                  {/* Info del archivo */}
                   <div className="flex items-center gap-4 text-sm text-slate-400">
                     {!file.isFolder && <span>{formatFileSize(file.size)}</span>}
                     {file.modifiedTime && (
                       <span>{new Date(file.modifiedTime).toLocaleDateString()}</span>
                     )}
                   </div>
+
+                  {isAdmin && isProcessed && !file.isFolder && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleUnragFile(file);
+                      }}
+                      disabled={unraggingFileId !== null}
+                      className="flex-shrink-0 p-1.5 text-red-500 hover:text-red-400 hover:bg-red-500/10 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      title="Des-ragear archivo (eliminar chunks y tracking)"
+                    >
+                      {unraggingFileId === file.id ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Trash2 className="w-4 h-4" />
+                      )}
+                    </button>
+                  )}
                 </div>
               );
             })}
@@ -588,7 +678,6 @@ export const DocumentExplorerPage: React.FC = () => {
         )}
       </div>
 
-      {/* Empty State */}
       {sources.length === 0 && !loading && (
         <div className="flex-1 flex flex-col items-center justify-center text-slate-400">
           <Settings className="w-16 h-16 mb-4 opacity-50" />
@@ -597,7 +686,6 @@ export const DocumentExplorerPage: React.FC = () => {
         </div>
       )}
 
-      {/* Modal Editar Fuente */}
       {showEditSourceModal && editingSource && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-slate-800 rounded-lg max-w-md w-full p-6">
@@ -691,8 +779,7 @@ export const DocumentExplorerPage: React.FC = () => {
         </div>
       )}
 
-      {/* Panel de sincronización RAG */}
-      <RagSyncPanel />
+      {isAdmin && <RagSyncPanel />}
     </div>
   );
 };

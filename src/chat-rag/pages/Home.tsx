@@ -69,10 +69,7 @@ const ConversationsSidebar: React.FC<{
   return (
     <aside
       className={`bg-slate-800/70 border-r border-slate-700 p-4 flex flex-col transition-all duration-300
-      ${collapsed ? "w-0 overflow-hidden p-0 border-r-0" : "w-full sm:w-80"}
-      fixed lg:static inset-y-0 left-0 z-20 lg:z-auto
-      ${collapsed ? '-translate-x-full lg:translate-x-0' : 'translate-x-0'}
-      lg:translate-x-0`}
+      ${collapsed ? "w-0 overflow-hidden p-0 border-r-0" : "w-80"}`}
       aria-hidden={collapsed}
     >
       {!collapsed && (
@@ -200,54 +197,23 @@ const ChatWindow: React.FC<{
   }, [messages]);
 
   return (
-    <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden p-2 sm:p-4 md:p-6 space-y-4">
+    <div className="flex-1 min-h-0 overflow-y-auto p-6 space-y-4">
       {messages.map((m) => {
         const fromUser = m.role === "user";
         return (
           <div
             key={m.id}
-            className={`flex ${fromUser ? "justify-end" : "justify-start"} w-full`}
+            className={`flex ${fromUser ? "justify-end" : "justify-start"}`}
           >
             <div
-              className={`w-full max-w-[85%] sm:max-w-2xl md:max-w-3xl p-3 sm:p-4 rounded-2xl shadow-lg ${
+              className={`max-w-3xl p-4 rounded-2xl shadow-lg ${
                 fromUser
                   ? "bg-blue-600 text-white"
                   : "bg-slate-800/80 border border-slate-700 text-slate-200"
               }`}
             >
-              <div className="whitespace-pre-wrap break-words overflow-wrap-anywhere prose prose-invert prose-sm max-w-none
-                prose-headings:text-slate-100
-                prose-p:text-slate-200 prose-p:break-words
-                prose-strong:text-white
-                prose-code:text-slate-100 prose-code:bg-slate-900/50 prose-code:px-1 prose-code:py-0.5 prose-code:rounded
-                prose-pre:bg-slate-900 prose-pre:text-slate-200 prose-pre:overflow-x-auto
-                prose-ul:text-slate-200 prose-ol:text-slate-200
-                prose-li:text-slate-200
-                prose-a:text-blue-400 prose-a:break-all
-                prose-table:w-full prose-table:overflow-x-auto
-                prose-blockquote:text-slate-300">
-                <ReactMarkdown
-                  components={{
-                    // Asegurar que tablas y código no causen overflow
-                    table: ({ node, ...props }) => (
-                      <div className="overflow-x-auto -mx-2 sm:mx-0">
-                        <table className="min-w-full" {...props} />
-                      </div>
-                    ),
-                    code: ({ node, inline, ...props }: any) => {
-                      if (inline) {
-                        return <code className="break-all" {...props} />;
-                      }
-                      return (
-                        <pre className="overflow-x-auto">
-                          <code {...props} />
-                        </pre>
-                      );
-                    },
-                  }}
-                >
-                  {m.content}
-                </ReactMarkdown>
+              <div className="whitespace-pre-wrap">
+                <ReactMarkdown>{m.content}</ReactMarkdown>
               </div>
               <div
                 className={`text-xs mt-2 ${
@@ -299,11 +265,13 @@ export const ChatRagPage: React.FC = () => {
     
     // ✅ Verificación TRIPLE: ref local + ref activo + lock global
     if (hasProcessedFile.current || isProcessing.current || globalFileProcessingLock) {
+      console.log('⚠️ Archivo ya procesado, en proceso, o lock global activo - IGNORANDO');
       return;
     }
     
     // ✅ Si hay fileInfo, activar TODOS los locks INMEDIATAMENTE
     if (fileInfo) {
+      console.log('🔒 Activando todos los locks para:', fileInfo.fileName);
       isProcessing.current = true;
       hasProcessedFile.current = true;
       globalFileProcessingLock = true;
@@ -314,18 +282,21 @@ export const ChatRagPage: React.FC = () => {
         // Si viene desde el explorador, crear nueva conversación con el nombre del archivo
         if (fileInfo) {
           try {
+            console.log('📄 Creando conversación para archivo:', fileInfo.fileName);
             const conv: any = await (dispatch as any)(createConversation(fileInfo.fileName));
+            console.log('✅ Conversación creada:', conv);
             
             if (conv?.id) {
               // Seleccionar la conversación creada
               dispatch(selectConversation(conv.id));
               dispatch(resetMessagesFor(conv.id));
               
+              console.log('❓ Haciendo pregunta sobre el archivo (sin procesarlo nuevamente)...');
               // Solo preguntar, NO procesar
               await askAboutFile(fileInfo, conv.id);
             }
           } catch (e: any) {
-            console.error('Error creando conversación:', e);
+            console.error('❌ Error creando conversación:', e);
             toast.error("No se pudo crear la conversación para el archivo");
           }
           // Limpiar el state para evitar reprocesar
@@ -345,6 +316,7 @@ export const ChatRagPage: React.FC = () => {
     return () => {
       if (fileInfo) {
         setTimeout(() => {
+          console.log('🔓 Liberando lock global (cleanup)');
           globalFileProcessingLock = false;
         }, 5000);
       }
@@ -355,25 +327,30 @@ export const ChatRagPage: React.FC = () => {
     fileInfo: { sourceId: number; fileId: string; fileName: string },
     conversationId: number
   ) => {
+    console.log('💬 Preguntando sobre archivo:', fileInfo.fileName);
     setProcessingFile(true);
     
     try {
       // Solo hacer la pregunta, sin procesar el archivo
       const question = `¿De qué trata el documento "${fileInfo.fileName}"? Dame un resumen detallado de su contenido y después pregúntame qué información específica necesito.`;
       
+      console.log('❓ Enviando pregunta a conversación', conversationId);
+      
       // Enviar el mensaje automáticamente
       setTimeout(async () => {
         try {
+          console.log('🚀 Disparando sendMessage...');
           await dispatch(sendMessage(conversationId, question) as any);
+          console.log('✅ Mensaje enviado correctamente');
         } catch (e: any) {
-          console.error('Error al enviar mensaje:', e);
+          console.error('❌ Error al enviar mensaje:', e);
           toast.error("Error al enviar la pregunta: " + e.message);
         } finally {
           setProcessingFile(false);
         }
       }, 800);
     } catch (error: any) {
-      console.error('Error asking about file:', error);
+      console.error('❌ Error asking about file:', error);
       toast.error(error.message || "Error al consultar sobre el archivo");
       setProcessingFile(false);
     }
@@ -461,45 +438,25 @@ export const ChatRagPage: React.FC = () => {
   // - Cada contenedor flex que tenga hijos con overflow necesita min-h-0.
   // - Así garantizamos que el scroll vive adentro del chat y no estira el layout.
   return (
-    <div className="h-screen min-h-0 flex relative">
-      {/* Overlay para móvil cuando sidebar está abierto */}
-      {!sidebarCollapsed && (
-        <div 
-          className="fixed inset-0 bg-black/50 z-10 lg:hidden"
-          onClick={() => setSidebarCollapsed(true)}
-        />
-      )}
-      
+    <div className="h-screen min-h-0 flex">
       <ConversationsSidebar
         conversations={conversations}
         selectedId={selectedId}
-        onSelect={(id) => {
-          onSelectConversation(id);
-          // Cerrar sidebar en móvil después de seleccionar
-          if (window.innerWidth < 1024) {
-            setSidebarCollapsed(true);
-          }
-        }}
-        onNew={() => {
-          onNewConversation();
-          // Cerrar sidebar en móvil después de crear nueva
-          if (window.innerWidth < 1024) {
-            setSidebarCollapsed(true);
-          }
-        }}
+        onSelect={onSelectConversation}
+        onNew={onNewConversation}
         onUpdateTitle={onUpdateTitle}
         loading={loadingConversations}
         collapsed={sidebarCollapsed}
       />
 
-      <div className="flex-1 min-h-0 flex flex-col bg-gradient-to-br from-slate-900 via-blue-900/10 to-slate-800 w-full lg:w-auto">
+      <div className="flex-1 min-h-0 flex flex-col bg-gradient-to-br from-slate-900 via-blue-900/10 to-slate-800">
         {/* Header Chat */}
-        <div className="flex items-center justify-between p-2 sm:p-4 border-b border-slate-700 bg-slate-800/50 gap-2">
-          <div className="flex items-center gap-1 sm:gap-2 min-w-0 flex-1">
+        <div className="flex items-center justify-between p-4 border-b border-slate-700 bg-slate-800/50">
+          <div className="flex items-center gap-2">
             {/* Toggle sidebar */}
             <button
               onClick={() => setSidebarCollapsed((v) => !v)}
-              className="text-slate-300 hover:text-white px-2 py-1 rounded-lg hover:bg-slate-700 transition-colors flex-shrink-0"
+              className="text-slate-300 hover:text-white px-2 py-1 rounded-lg hover:bg-slate-700 transition-colors"
               title={
                 sidebarCollapsed ? "Mostrar historial" : "Ocultar historial"
               }
@@ -512,18 +469,17 @@ export const ChatRagPage: React.FC = () => {
               )}
             </button>
 
-            <MessageSquarePlus className="w-4 h-4 sm:w-5 sm:h-5 text-blue-400 flex-shrink-0" />
-            <h1 className="text-white font-semibold text-sm sm:text-base truncate">Asistente RAG</h1>
+            <MessageSquarePlus className="w-5 h-5 text-blue-400" />
+            <h1 className="text-white font-semibold">Asistente RAG</h1>
             {loadingHistory && (
-              <span className="ml-1 sm:ml-2 text-xs text-slate-400 inline-flex items-center gap-1 flex-shrink-0">
-                <Loader2 className="w-3 h-3 animate-spin" /> 
-                <span className="hidden sm:inline">Cargando historial...</span>
+              <span className="ml-2 text-xs text-slate-400 inline-flex items-center gap-1">
+                <Loader2 className="w-3 h-3 animate-spin" /> Cargando
+                historial...
               </span>
             )}
             {processingFile && (
-              <span className="ml-1 sm:ml-2 text-xs text-blue-400 inline-flex items-center gap-1 flex-shrink-0">
-                <Loader2 className="w-3 h-3 animate-spin" /> 
-                <span className="hidden sm:inline">Consultando documento...</span>
+              <span className="ml-2 text-xs text-blue-400 inline-flex items-center gap-1">
+                <Loader2 className="w-3 h-3 animate-spin" /> Consultando documento...
               </span>
             )}
           </div>
@@ -543,37 +499,37 @@ export const ChatRagPage: React.FC = () => {
         <ChatWindow messages={messages} onCopy={onCopy} />
 
         {/* Input */}
-        <div className="p-2 sm:p-4 border-t border-slate-700 bg-slate-800/40">
+        <div className="p-4 border-t border-slate-700 bg-slate-800/40">
           <div className="max-w-4xl mx-auto">
-            <div className="bg-slate-800/80 border border-slate-600 rounded-xl sm:rounded-2xl p-2 sm:p-3 shadow-lg">
-              <div className="flex items-end gap-1 sm:gap-2">
+            <div className="bg-slate-800/80 border border-slate-600 rounded-2xl p-3 shadow-lg">
+              <div className="flex items-end gap-2">
                 <textarea
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   onKeyDown={onKeyDown}
                   placeholder={
                     hasSelection
-                      ? "Escribe tu consulta..."
+                      ? "Escribe tu consulta... (Enter para enviar, Shift+Enter para nueva línea)"
                       : "Creá una conversación para empezar…"
                   }
                   disabled={!hasSelection || sending}
                   rows={1}
-                  className="flex-1 bg-transparent text-white placeholder-slate-400 border-none outline-none resize-none min-h-[40px] sm:min-h-[44px] max-h-[200px] text-sm sm:text-base"
+                  className="flex-1 bg-transparent text-white placeholder-slate-400 border-none outline-none resize-none min-h-[44px] max-h-[200px]"
                 />
                 <button
                   onClick={onSend}
                   disabled={!hasSelection || sending || !input.trim()}
-                  className="bg-blue-600 hover:bg-blue-700 disabled:bg-slate-600 text-white px-2 sm:px-4 py-2 sm:py-3 rounded-lg sm:rounded-xl transition-colors inline-flex items-center gap-1 sm:gap-2 flex-shrink-0"
+                  className="bg-blue-600 hover:bg-blue-700 disabled:bg-slate-600 text-white px-4 py-3 rounded-xl transition-colors inline-flex items-center gap-2"
                 >
                   {sending ? (
                     <>
                       <Loader2 className="w-4 h-4 animate-spin" />
-                      <span className="hidden sm:inline">Enviando</span>
+                      Enviando
                     </>
                   ) : (
                     <>
                       <Send className="w-4 h-4" />
-                      <span className="hidden sm:inline">Enviar</span>
+                      Enviar
                     </>
                   )}
                 </button>
