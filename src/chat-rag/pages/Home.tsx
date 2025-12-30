@@ -212,8 +212,39 @@ const ChatWindow: React.FC<{
                   : "bg-slate-800/80 border border-slate-700 text-slate-200"
               }`}
             >
-              <div className="whitespace-pre-wrap">
-                <ReactMarkdown>{m.content}</ReactMarkdown>
+              <div className="whitespace-pre-wrap prose prose-invert max-w-none">
+                <ReactMarkdown
+                  components={{
+                    table: ({ children }) => (
+                      <div className="overflow-x-auto my-4 -mx-4">
+                        <table className="min-w-full border-collapse border border-slate-600 text-sm">
+                          {children}
+                        </table>
+                      </div>
+                    ),
+                    thead: ({ children }) => (
+                      <thead className="bg-slate-700/80">{children}</thead>
+                    ),
+                    tbody: ({ children }) => (
+                      <tbody className="bg-slate-800/30 divide-y divide-slate-600">{children}</tbody>
+                    ),
+                    tr: ({ children }) => (
+                      <tr className="hover:bg-slate-700/30 transition-colors">{children}</tr>
+                    ),
+                    th: ({ children }) => (
+                      <th className="border border-slate-600 px-4 py-2 text-left font-semibold text-slate-200 bg-slate-700/60">
+                        {children}
+                      </th>
+                    ),
+                    td: ({ children }) => (
+                      <td className="border border-slate-600 px-4 py-2 text-slate-300 align-top">
+                        {children}
+                      </td>
+                    ),
+                  }}
+                >
+                  {m.content}
+                </ReactMarkdown>
               </div>
               <div
                 className={`text-xs mt-2 ${
