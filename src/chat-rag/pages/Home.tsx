@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { toast } from "react-toastify";
 import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import type { AppDispatch } from "../../store/store";
 import { resetMessagesFor, selectConversation, selectRag, selectSelectedMessages, setError } from "../../store/slices/rag/ragSlice";
 import { createConversation, fetchConversations, fetchHistory, sendMessage, updateConversationTitle } from "../../store/slices/rag/rag.thunks";
@@ -214,6 +215,7 @@ const ChatWindow: React.FC<{
             >
               <div className="whitespace-pre-wrap prose prose-invert max-w-none">
                 <ReactMarkdown
+                  remarkPlugins={[remarkGfm]}
                   components={{
                     table: ({ children }) => (
                       <div className="overflow-x-auto my-4 -mx-4">
